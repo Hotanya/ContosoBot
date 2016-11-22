@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-//using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace ContosoBot
@@ -20,59 +20,41 @@ namespace ContosoBot
         /// </summary>
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            // Global values
-            bool boolAskedForUserName = false;
-            string strUserName = "";
             if (activity.Type == ActivityTypes.Message)
             {
-                // Get any saved values
-                StateClient sc = activity.GetStateClient();
-                BotData userData = sc.BotState.GetPrivateConversationData(
-                    activity.ChannelId, activity.Conversation.Id, activity.From.Id);
-                boolAskedForUserName = userData.GetProperty<bool>("AskedForUserName");
-                strUserName = userData.GetProperty<string>("UserName") ?? "";
-                // Create text for a reply message   
-                StringBuilder strReplyMessage = new StringBuilder();
-                if (boolAskedForUserName == false) // Never asked for name
-                {
-                    strReplyMessage.Append($"Hello, I am the Contoso Bot!");
-                    strReplyMessage.Append($"\n");
-                    strReplyMessage.Append($"You can say anything");
-                    strReplyMessage.Append($"\n");
-                    strReplyMessage.Append($"to me and I will repeat it back");
-                    strReplyMessage.Append($"\n\n");
-                    strReplyMessage.Append($"What is your name?");
-                    // Set BotUserData
-                    userData.SetProperty<bool>("AskedForUserName", true);
-                }
-                else // Have asked for name
-                {
-                    if (strUserName == "") // Name was never provided
-                    {
-                        // If we have asked for a username but it has not been set
-                        // the current response is the user name
-                        strReplyMessage.Append($"Hello {activity.Text}, how may I help you?");
-                        // Set BotUserData
-                        userData.SetProperty<string>("UserName", activity.Text);
-                    }
-                    else // Name was provided
-                    {
-                        strReplyMessage.Append($"{strUserName}, You said: {activity.Text}");
-                    }
-                }
-                // Save BotUserData
-                sc.BotState.SetPrivateConversationData(
-                    activity.ChannelId, activity.Conversation.Id, activity.From.Id, userData);
-                // Create a reply message
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                Activity replyMessage = activity.CreateReply(strReplyMessage.ToString());
-                await connector.Conversations.ReplyToActivityAsync(replyMessage);
+                currencyInfo.RootObject rootObject;
+                HttpClient client = new HttpClient();
+                string x = await client.GetStringAsync(new Uri("http://api.fixer.io/latest?base=nzd"));
+                rootObject = JsonConvert.DeserializeObject<currencyInfo.RootObject>(x);
+
+                string date = rootObject.date;
+
+                double aud = rootObject.rates.AUD;
+                double inr = rootObject.rates.INR;
+                double jpy = rootObject.rates.JPY;
+                double eur = rootObject.rates.EUR;
+                double gbp = rootObject.rates.GBP;
+
+                string[] array = new string[]
+                    {"aud", "inr", "jpy", "eur", "gbp"};
+
+               foreach(string i in array)
+                {
+                    if (ActivityTypes.Message == i) 
+                    {
+                        // return our reply to the user
+                        Activity reply = activity.CreateReply($"{aud}");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+                }
+
+                
             }
             else
             {
                 HandleSystemMessage(activity);
             }
-            // Return response
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
@@ -81,20 +63,8 @@ namespace ContosoBot
         {
             if (message.Type == ActivityTypes.DeleteUserData)
             {
-                // Get BotUserData
-                StateClient sc = message.GetStateClient();
-                BotData userData = sc.BotState.GetPrivateConversationData(
-                    message.ChannelId, message.Conversation.Id, message.From.Id);
-                // Set BotUserData
-                userData.SetProperty<string>("UserName", "");
-                userData.SetProperty<bool>("AskedForUserName", false);
-                // Save BotUserData
-                sc.BotState.SetPrivateConversationData(
-                    message.ChannelId, message.Conversation.Id, message.From.Id, userData);
-                // Create a reply message
-                ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
-                Activity replyMessage = message.CreateReply("Personal data has been deleted.");
-                return replyMessage;
+                // Implement user deletion here
+                // If we handle user deletion, return a real message
             }
             else if (message.Type == ActivityTypes.ConversationUpdate)
             {
