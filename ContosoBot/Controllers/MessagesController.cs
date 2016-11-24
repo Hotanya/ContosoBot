@@ -47,7 +47,7 @@ namespace ContosoBot
                     replyToConversation.Attachments = new List<Attachment>();
 
                     List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: "C:/Users/Hotanya/Downloads/Logomakr_0vCnQn.png"));
+                    cardImages.Add(new CardImage(url: "https://github.com/Hotanya/ContosoBotLogo/blob/master/ContosoLogoBig.png?raw=true"));
 
                  
 
