@@ -8,6 +8,8 @@ using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
 using System.Text;
+using ContosoBot.DataModels;
+using System.Collections.Generic;
 
 namespace ContosoBot
 {
@@ -18,83 +20,248 @@ namespace ContosoBot
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
+
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            // Global values
-            bool boolAskedForUserName = false;
-            string strUserName = "";
             if (activity.Type == ActivityTypes.Message)
             {
-                // Get any saved values
-                StateClient sc = activity.GetStateClient();
-                BotData userData = sc.BotState.GetPrivateConversationData(
-                    activity.ChannelId, activity.Conversation.Id, activity.From.Id);
-                boolAskedForUserName = userData.GetProperty<bool>("AskedForUserName");
-                strUserName = userData.GetProperty<string>("UserName") ?? "";
-                // Create text for a reply message   
-                StringBuilder strReplyMessage = new StringBuilder();
-                if (boolAskedForUserName == false) // Never asked for name
-                {
-                    strReplyMessage.Append($"Hello, I am the Contoso Bot!");
-                    strReplyMessage.Append($"\n");
-                    strReplyMessage.Append($"You can say anything");
-                    strReplyMessage.Append($"\n");
-                    strReplyMessage.Append($"to me and I will repeat it back");
-                    strReplyMessage.Append($"\n\n");
-                    strReplyMessage.Append($"What is your name?");
-                    // Set BotUserData
-                    userData.SetProperty<bool>("AskedForUserName", true);
-                }
-                else // Have asked for name
-                {
-                    if (strUserName == "") // Name was never provided
-                    {
-                        // If we have asked for a username but it has not been set
-                        // the current response is the user name
-                        strReplyMessage.Append($"Hello {activity.Text}, how may I help you?");
-                        // Set BotUserData
-                        userData.SetProperty<string>("UserName", activity.Text);
-                    }
-                    else // Name was provided
-                    {
-                        strReplyMessage.Append($"{strUserName}, You said: {activity.Text}");
-                    }
-                }
-                // Save BotUserData
-                sc.BotState.SetPrivateConversationData(
-                    activity.ChannelId, activity.Conversation.Id, activity.From.Id, userData);
-                // Create a reply message
+
+
+
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                Activity replyMessage = activity.CreateReply(strReplyMessage.ToString());
-                await connector.Conversations.ReplyToActivityAsync(replyMessage);
+                //Setup State Client
+                StateClient stateClient = activity.GetStateClient();
+                //Grab User Data
+                BotData userData = stateClient.BotState.GetPrivateConversationData(activity.ChannelId, activity.Conversation.Id, activity.From.Id);
+                // Get BotUserData
+
+                bool isNameAsked = false;
+                bool isCurrencyRequest = true;
+                string botOutput = "Hello, I am the Contoso Bank Bot! Please enter your password to continue.";
+
+                if (activity.Text == "hello")
+                {
+                    Activity infReply = activity.CreateReply(botOutput);
+                    await connector.Conversations.ReplyToActivityAsync(infReply);
+                }
+
+                if (activity.Text == "*******") // 7 stars
+                {
+                    string userInput = activity.Text;
+
+                    userData.SetProperty<string>("name", userInput); //use this in nameReply
+                    {
+                        botOutput = activity.Type;
+                        Activity nameReply = activity.CreateReply("Hello" + " " + "Hotanya" + ", how may I help you?");
+                        await connector.Conversations.ReplyToActivityAsync(nameReply);
+                    }
+
+                }
+
+                if (activity.Text.ToLower().Equals("msa"))
+                {
+                    Activity replyToConversation = activity.CreateReply("MSA information");
+                    replyToConversation.Recipient = activity.From;
+                    replyToConversation.Type = "message";
+                    replyToConversation.Attachments = new List<Attachment>();
+
+                    List<CardImage> cardImages = new List<CardImage>();
+                    cardImages.Add(new CardImage(url: "https://cdn2.iconfinder.com/data/icons/ios-7-style-metro-ui-icons/512/MetroUI_iCloud.png"));
+
+                    List<CardAction> cardButtons = new List<CardAction>();
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = "http://msa.ms",
+                        Type = "openUrl",
+                        Title = "MSA Website"
+                    };
+                    cardButtons.Add(plButton);
+
+                    ThumbnailCard plCard = new ThumbnailCard()
+                    {
+                        Title = "Visit MSA",
+                        Subtitle = "The MSA Website is here",
+                        Images = cardImages,
+                        Buttons = cardButtons
+                    };
+
+                    Attachment plAttachment = plCard.ToAttachment();
+                    replyToConversation.Attachments.Add(plAttachment);
+                    await connector.Conversations.SendToConversationAsync(replyToConversation);
+
+                    return Request.CreateResponse(HttpStatusCode.OK);
+
+                }
+
+                //database code
+
+
+                // Save BotUserData
+                // stateClient.BotState.SetPrivateConversationData(activity.ChannelId, activity.Conversation.Id, activity.From.Id, userData);
+
+                //Activity infoReply = activity.CreateReply(strReplyMessage.ToString());
+
+                //await connector.Conversations.ReplyToActivityAsync(infoReply);
+                // var response = Request.CreateResponse(HttpStatusCode.OK);
+                if (activity.Text.ToLower().Equals("get timelines"))
+                {
+                    List<Customer> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+                    botOutput = "";
+                    foreach (Customer t in timelines)
+                    {
+                        botOutput += t.firstName + " " + t.lastName + " " + t.dateOfBirth + "\n\n";
+                    }
+                    isCurrencyRequest = false;
+
+                }
+
+
+                if (activity.Text.ToLower().Equals("new customer"))
+                {
+                
+                   
+                    Customer timeline = new Customer()
+                    {
+                        firstName = "Harry",
+                        lastName = "Potter",
+                        dateOfBirth = "31/07/1980"
+                    };
+
+                    await AzureManager.AzureManagerInstance.AddTimeline(timeline);
+
+                    isCurrencyRequest = false;
+
+                    botOutput = "New timeline added [" + timeline.firstName + "]";
+                }
+
+                if (!isCurrencyRequest)
+                {
+                    // return our reply to the user
+                    Activity infoReply = activity.CreateReply(botOutput);
+
+                    await connector.Conversations.ReplyToActivityAsync(infoReply);
+
+                }
+                else
+                {
+
+                    currencyInfo.RootObject rootObject;
+                    HttpClient client = new HttpClient();
+                    string api = await client.GetStringAsync(new Uri("http://api.fixer.io/latest?base=nzd"));
+
+                    rootObject = JsonConvert.DeserializeObject<currencyInfo.RootObject>(api);
+
+                    string date = rootObject.date;
+                    double usd = rootObject.rates.USD;
+                    double aud = rootObject.rates.AUD;
+                    double inr = rootObject.rates.INR;
+                    double jpy = rootObject.rates.JPY;
+                    double eur = rootObject.rates.EUR;
+                    double gbp = rootObject.rates.GBP;
+
+                    if (activity.Text == "aud")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {aud} Australia Dollars");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "AUD")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {aud} Australia Dollars");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "inr")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {inr} Indian Rupees");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "INR")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {inr} Indian Rupees");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "jpy")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {jpy} Japanese Yen");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "JPY")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {jpy} Japanese Yen");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "eur")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {eur} Euros");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "EUR")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {eur} Euros");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "gbp")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {gbp} British Pounds");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "GBP")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {gbp} British Pounds");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "usd")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {usd} US Dollars");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+                    else if (activity.Text == "USD")
+                    {
+                        //return our reply to the user
+                        Activity reply = activity.CreateReply($"For 1 New Zealand Dollar, you will get {usd} US Dollars");
+                        await connector.Conversations.ReplyToActivityAsync(reply);
+                    }
+
+
+                }
             }
             else
             {
                 HandleSystemMessage(activity);
+
             }
-            // Return response
-            var response = Request.CreateResponse(HttpStatusCode.OK);
-            return response;
-        }
+                var response = Request.CreateResponse(HttpStatusCode.OK);
+                return response;
+            }
+
+
 
         private Activity HandleSystemMessage(Activity message)
         {
             if (message.Type == ActivityTypes.DeleteUserData)
             {
-                // Get BotUserData
-                StateClient sc = message.GetStateClient();
-                BotData userData = sc.BotState.GetPrivateConversationData(
-                    message.ChannelId, message.Conversation.Id, message.From.Id);
-                // Set BotUserData
-                userData.SetProperty<string>("UserName", "");
-                userData.SetProperty<bool>("AskedForUserName", false);
-                // Save BotUserData
-                sc.BotState.SetPrivateConversationData(
-                    message.ChannelId, message.Conversation.Id, message.From.Id, userData);
-                // Create a reply message
-                ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
-                Activity replyMessage = message.CreateReply("Personal data has been deleted.");
-                return replyMessage;
+              
             }
             else if (message.Type == ActivityTypes.ConversationUpdate)
             {
@@ -119,3 +286,6 @@ namespace ContosoBot
         }
     }
 }
+
+
+
