@@ -25,5 +25,8 @@ namespace ContosoBot.DataModels
 
         [JsonProperty(PropertyName = "mobileNumber")]
         public int mobileNumber { get; set; }
+
+        [JsonProperty(PropertyName = "accountType")]
+        public string accountType { get; set; }
     }
 }
