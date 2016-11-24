@@ -48,5 +48,15 @@ namespace ContosoBot
         {
             return await this.timelineTable.ToListAsync();
         }
+
+        public async Task DeleteTimeline(Customer timeline)
+        {
+            await this.timelineTable.DeleteAsync(timeline);
+        }
+
+        public async Task UpdateTimeline(Customer timeline)
+        {
+            await this.timelineTable.UpdateAsync(timeline);
+        }
     }
 }
