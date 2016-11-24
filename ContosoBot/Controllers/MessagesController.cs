@@ -103,7 +103,7 @@ namespace ContosoBot
 
                 //await connector.Conversations.ReplyToActivityAsync(infoReply);
                 // var response = Request.CreateResponse(HttpStatusCode.OK);
-                if (activity.Text.ToLower().Equals("get timelines"))
+                if (activity.Text.ToLower().Equals("view customers"))
                 {
                     List<Customer> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
                     botOutput = "";
@@ -115,31 +115,42 @@ namespace ContosoBot
 
                 }
 
-
-                if (activity.Text.ToLower().Equals("new customer"))
+                if (activity.Text.Length > 16)
                 {
-                
-                   
-                    Customer timeline = new Customer()
+
+                    if (activity.Text.ToLower().Substring(0, 16).Equals("add new customer"))
                     {
-                        firstName = "Harry",
-                        lastName = "Potter",
-                        dateOfBirth = "31/07/1980"
-                    };
 
-                    await AzureManager.AzureManagerInstance.AddTimeline(timeline);
+                        string subs = activity.Text.Substring(17);
+                        string[] split = subs.Split(' ');
+                        userData.SetProperty<string>("firstName", split[0]);
+                        userData.SetProperty<string>("lastName", split[1]);
+                        userData.SetProperty<string>("dateOfBirth", split[2]);
 
-                    isCurrencyRequest = false;
 
-                    botOutput = "New timeline added [" + timeline.firstName + "]";
+                        Customer timeline = new Customer()
+                        {
+                            firstName = userData.GetProperty<string>("firstName"),
+                            lastName = userData.GetProperty<string>("lastName"),
+                            dateOfBirth = userData.GetProperty<string>("dateOfBirth"),
+
+                        };
+
+                        await AzureManager.AzureManagerInstance.AddTimeline(timeline);
+
+                        isCurrencyRequest = false;
+
+                        botOutput = "New timeline added [" + timeline.firstName + timeline.lastName + timeline.dateOfBirth + "]";
+                    }
                 }
 
-                if (!isCurrencyRequest)
+                    if (!isCurrencyRequest)
                 {
                     // return our reply to the user
                     Activity infoReply = activity.CreateReply(botOutput);
 
-                    await connector.Conversations.ReplyToActivityAsync(infoReply);
+
+                await connector.Conversations.ReplyToActivityAsync(infoReply);
 
                 }
                 else
