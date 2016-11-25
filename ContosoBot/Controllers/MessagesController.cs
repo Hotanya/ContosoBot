@@ -145,7 +145,7 @@ namespace ContosoBot
 
                         isCurrencyRequest = false;
 
-                        botOutput = "New timeline added [" + timeline.firstName + timeline.lastName + timeline.dateOfBirth + "]";
+                        botOutput = "New timeline added [" + timeline.firstName + timeline.lastName + timeline.dateOfBirth + timeline.accountType + "]";
                     }
                     isCurrencyRequest = false;
 
@@ -153,23 +153,32 @@ namespace ContosoBot
 
 
                     //DELETE FROM DATABASE
-                    if (activity.Text.ToLower().Equals("delete account"))
+                    if (activity.Text.Length > 15)
                     {
-                        List<Customer> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
-                        string id = userData.GetProperty<string>("Id");
-                        foreach (Customer c in timelines)
+                        if ((activity.Text.ToLower().Substring(0, 15).Equals("delete account ")))
                         {
-                            if (c.ID.Equals(id))
+                            string subs = activity.Text.Substring(16);
+                            string[] split = subs.Split(' ');
+                            userData.SetProperty<string>("Id", split[0]);
+                            List<Customer> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+
+
+                            Customer timeline = new Customer()
                             {
-                                await AzureManager.AzureManagerInstance.DeleteTimeline(c);
+                                ID = userData.GetProperty<string>("Id"),
+                            };
 
-                                botOutput = c.firstName + c.lastName + "'s (Id #" + c.ID + ")" + c.accountType + "account" + " was deleted.";
+                            await AzureManager.AzureManagerInstance.DeleteTimeline(timeline);
 
-                            }
+                            botOutput = timeline.firstName + timeline.lastName + "'s (Id #" + timeline.ID + ")" + timeline.accountType + "account" + " was deleted.";
+
                         }
+                        isCurrencyRequest = false;
 
                     }
-                }
+
+            }
+                
 
                 if (!isCurrencyRequest)
                 {
