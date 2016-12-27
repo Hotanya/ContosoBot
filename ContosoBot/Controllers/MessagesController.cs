@@ -82,7 +82,7 @@ namespace ContosoBot
                     ThumbnailCard plCard = new ThumbnailCard()
                     {
                         Title = "Contoso Bank Bot Help",
-                        Subtitle = "Options:\n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n ",
+                        Subtitle = "Options:\n \n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n Create a new account- Type Create new account \n View customers- Type View customers ",
                         Images = cardImages,
 
                     };
@@ -134,13 +134,13 @@ namespace ContosoBot
                 }
 
                 // ADD TO DATABASE
-                if (activity.Text.Length > 16)
+                if (activity.Text.Length > 20)
                 {
 
-                    if (activity.Text.ToLower().Substring(0, 16).Equals("add new customer"))
+                    if (activity.Text.ToLower().Substring(0, 20).Equals("create new account"))
                     {
 
-                        string subs = activity.Text.Substring(17);
+                        string subs = activity.Text.Substring(21);
                         string[] split = subs.Split(' ');
                         userData.SetProperty<string>("Id", split[0]);
                         userData.SetProperty<string>("firstName", split[1]);
