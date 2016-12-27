@@ -41,9 +41,9 @@ namespace ContosoBot
                 bool isCurrencyRequest = true;
                 string botOutput = "Hello, I am the Contoso Bank Bot! Please enter your password to continue.";
 
-                if (activity.Text.ToLower().Equals("hello"))
+                if (activity.Text.ToLower().Equals("hello") || activity.Text.ToLower().Equals("hi") || activity.Text.ToLower().Equals("hey"))
                 {
-                    Activity replyToConversation = activity.CreateReply("Hi There!");
+                    Activity replyToConversation = activity.CreateReply();
                     replyToConversation.Recipient = activity.From;
                     replyToConversation.Type = "message";
                     replyToConversation.Attachments = new List<Attachment>();
@@ -51,14 +51,14 @@ namespace ContosoBot
                     List<CardImage> cardImages = new List<CardImage>();
                     cardImages.Add(new CardImage(url: "https://github.com/Hotanya/ContosoBotLogo/blob/master/ContosoLogoBig.png?raw=true"));
 
-                 
+
 
                     ThumbnailCard plCard = new ThumbnailCard()
                     {
-                        Title = "I am the Contoso Bank Bot.",
-                        Subtitle = "Please enter your password to continue.",
+                        Title = "Welcome! I am the Contoso Bank Bot. How may I help you?",
+                        Subtitle = "Type help at anytime to display available commands.",
                         Images = cardImages,
-                        
+
                     };
 
                     Attachment plAttachment = plCard.ToAttachment();
@@ -69,13 +69,33 @@ namespace ContosoBot
 
                 }
 
-                /*if (activity.Text == "hello")
+                if (activity.Text == "help")
                 {
-                    Activity infReply = activity.CreateReply(botOutput);
-                    await connector.Conversations.ReplyToActivityAsync(infReply);
-                }
-                */
+                    Activity replyToConversation = activity.CreateReply();
+                    replyToConversation.Recipient = activity.From;
+                    replyToConversation.Type = "message";
+                    replyToConversation.Attachments = new List<Attachment>();
 
+                    List<CardImage> cardImages = new List<CardImage>();
+                    cardImages.Add(new CardImage(url: "https://github.com/Hotanya/ContosoBotLogo/blob/master/ContosoLogoBig.png?raw=true"));
+
+                    ThumbnailCard plCard = new ThumbnailCard()
+                    {
+                        Title = "Contoso Bank Bot Help",
+                        Subtitle = "Options:\n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n ",
+                        Images = cardImages,
+
+                    };
+
+                    Attachment plAttachment = plCard.ToAttachment();
+                    replyToConversation.Attachments.Add(plAttachment);
+                    await connector.Conversations.SendToConversationAsync(replyToConversation);
+
+                    return Request.CreateResponse(HttpStatusCode.OK);
+
+                }
+
+    
                 if (activity.Text == "*******") // 7 stars
                 {
                     string userInput = activity.Text;
@@ -88,8 +108,6 @@ namespace ContosoBot
                     }
 
                 }
-
-                
 
                 //database code
 
@@ -153,7 +171,7 @@ namespace ContosoBot
 
 
                     //DELETE FROM DATABASE
-                    if (activity.Text.Length > 15)
+                    /*if (activity.Text.Length > 15)
                     {
                         if ((activity.Text.ToLower().Substring(0, 15).Equals("delete account ")))
                         {
@@ -176,8 +194,27 @@ namespace ContosoBot
                         isCurrencyRequest = false;
 
                     }
+                    */
+                    if (activity.Text.ToLower().Contains("delete customer"))
+                    {
+                        var newRating = activity.Text.Split(' ');
+                        List<Customer> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+                        string userName = activity.From.Name;
+                        bool isUpdated = false;
+                        foreach (Customer t in timelines)
+                        {
 
-            }
+                            if (t.firstName.Equals(userName))
+                            {
+                                await AzureManager.AzureManagerInstance.DeleteTimeline(t);
+                                botOutput = "Your Rating has been deleted! Thanks " + activity.From.Name;
+                                isUpdated = true;
+                                break;
+                            }
+                        }
+                    }
+
+                }
                 
 
                 if (!isCurrencyRequest)
