@@ -40,6 +40,7 @@ namespace ContosoBot
                 bool isNameAsked = false;
                 bool isCurrencyRequest = true;
                 string botOutput = "Hello, I am the Contoso Bank Bot! Please enter your password to continue.";
+                StringBuilder strReply = new StringBuilder();
 
                 if (activity.Text.ToLower().Equals("hello") || activity.Text.ToLower().Equals("hi") || activity.Text.ToLower().Equals("hey"))
                 {
@@ -69,33 +70,44 @@ namespace ContosoBot
 
                 }
 
-                if (activity.Text == "help")
+                if (activity.Text.ToLower().ToString().Equals("help"))
                 {
-                    Activity replyToConversation = activity.CreateReply();
-                    replyToConversation.Recipient = activity.From;
-                    replyToConversation.Type = "message";
-                    replyToConversation.Attachments = new List<Attachment>();
-
-                    List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: "https://github.com/Hotanya/ContosoBotLogo/blob/master/ContosoLogoBig.png?raw=true"));
-
-                    ThumbnailCard plCard = new ThumbnailCard()
-                    {
-                        Title = "Contoso Bank Bot Help",
-                        Subtitle = "Options:\n \n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n Create a new account- Type Create new account \n View customers- Type View customers ",
-                        Images = cardImages,
-
-                    };
-
-                    Attachment plAttachment = plCard.ToAttachment();
-                    replyToConversation.Attachments.Add(plAttachment);
-                    await connector.Conversations.SendToConversationAsync(replyToConversation);
-
-                    return Request.CreateResponse(HttpStatusCode.OK);
+                    strReply.Append("Contoso Bank Bot Help:\n\n");
+                    strReply.Append("Options:\n\n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n\n ");
+                    strReply.Append("View customers- Type 'View customers'\n\n");
+                    strReply.Append("Creating a new account- Type 'Create new account' Format: 'Your ID' 'First Name' 'Last Name' 'DOB' 'Type of account you want to open' \n\n e.g. 07 Tom Riddle 16/05/1938 Evil");
 
                 }
 
-    
+                Activity replymsg = activity.CreateReply(strReply.ToString());
+                await connector.Conversations.ReplyToActivityAsync(replymsg);
+
+   // Cards format wasnt displaying thr help info properly
+                //Activity replyToConversation = activity.CreateReply();
+                //replyToConversation.Recipient = activity.From;
+                //replyToConversation.Type = "message";
+                //replyToConversation.Attachments = new List<Attachment>();
+
+                //List<CardImage> cardImages = new List<CardImage>();
+                //cardImages.Add(new CardImage(url: "https://github.com/Hotanya/ContosoBotLogo/blob/master/ContosoLogoBig.png?raw=true"));
+
+                //ThumbnailCard plCard = new ThumbnailCard()
+                //{
+                //    Title = "Contoso Bank Bot Help",
+                //    Subtitle = "Options:\n \n Currency Conversion- Type a currency code to see the exchange rate e.g aud \n Create a new account- Type Create new account \n View customers- Type View customers ",
+                //    Images = cardImages,
+
+                //};
+
+                //    Attachment plAttachment = plCard.ToAttachment();
+                //    replyToConversation.Attachments.Add(plAttachment);
+                //    await connector.Conversations.SendToConversationAsync(replyToConversation);
+
+                //    return Request.CreateResponse(HttpStatusCode.OK);
+
+                //}
+
+
                 if (activity.Text == "*******") // 7 stars
                 {
                     string userInput = activity.Text;
@@ -330,7 +342,6 @@ namespace ContosoBot
                         //await connector.Conversations.ReplyToActivityAsync(reply);
                     }
 
-                    
 
                         Activity replyToConversation = activity.CreateReply("Your request:");
                         replyToConversation.Recipient = activity.From;
